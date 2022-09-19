@@ -13,4 +13,4 @@ defined('DS') or exit('No direct script access.');
 |
 */
 
-Route::get('(:package)', 'logviewer::log@index');
+Route::get('(:package)', 'logviewer::home@index');
