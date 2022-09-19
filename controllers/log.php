@@ -11,7 +11,7 @@ class Logviewer_Log_Controller extends Controller
         // Proteksi route dengan middleware
         $middlewares = Config::get('logviewer::main.middleware');
         $middlewares = array_merge($middlewares, ['auth']);
-        // $this->middleware('before', $middlewares);
+        $this->middleware('before', $middlewares);
 
         $this->viewer = new \Esyede\Viewer();
     }
