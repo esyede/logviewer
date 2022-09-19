@@ -2,7 +2,7 @@
 
 defined('DS') or exit('No direct script access.');
 
-class Logviewer_Log_Controller extends Controller
+class Logviewer_Home_Controller extends Controller
 {
     private $viewer;
 
