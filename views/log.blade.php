@@ -16,7 +16,7 @@
   <div class="row">
     <div class="col-2 sidebar mb-3 ml-0">
       <h1><i class="fa fa-calendar" aria-hidden="true"></i> Rakit Log Viewer</h1>
-      <p class="text-muted"><i>by <strong><a href="https://github.com/esyede">@esyede</a></strong></i></p>
+      <p class="text-muted"><i>by <strong><a href="https://github.com/esyede" target="_blank">@esyede</a></strong></i></p>
       <div class="custom-control custom-switch" style="padding-bottom:20px;">
         <input type="checkbox" class="custom-control-input" id="darkSwitch">
         <label class="custom-control-label" for="darkSwitch" style="margin-top: 6px;">Dark mode</label>
