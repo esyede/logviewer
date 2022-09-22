@@ -11,7 +11,7 @@ class Viewer
     private $file;
     private $folder;
     private $logdir;
-    private $patterns = [
+    private $regexes = [
         'logs' => '/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([\+-]\d{4})?\].*/',
         'current_log' => [
             '/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}([\+-]\d{4})?)\](?:.*?(\w+)\.|.*?)',
@@ -53,7 +53,7 @@ class Viewer
         $this->logdir = path('storage').'logs';
     }
 
-    public function setFolder($folder)
+    public function in($folder)
     {
         if (! Str::starts_with($folder, $this->logdir)) {
             $folder = $this->logdir.$folder;            
@@ -63,7 +63,7 @@ class Viewer
             $this->folder = $folder;
         } elseif (is_array($this->logdir)) {
             foreach ($this->logdir as $value) {
-                $path = $value.DIRECTORY_SEPARATOR.$folder;
+                $path = $value.DS.$folder;
 
                 if (file_exists($path)) {
                     $this->folder = $folder;
@@ -71,7 +71,7 @@ class Viewer
                 }
             }
         } else {
-            $path = $this->logdir.DIRECTORY_SEPARATOR.$folder;
+            $path = $this->logdir.DS.$folder;
 
             if (file_exists($path)) {
                 $this->folder = $folder;
@@ -79,16 +79,16 @@ class Viewer
         }
     }
 
-    public function setFile($file)
+    public function of($file)
     {
-        $file = $this->pathToLogFile($file);
+        $file = $this->path($file);
 
         if (file_exists($file)) {
             $this->file = $file;
         }
     }
 
-    public function pathToLogFile($file)
+    public function path($file)
     {
         if (file_exists($file)) {
             return $file;
@@ -96,8 +96,8 @@ class Viewer
 
         if (is_array($this->logdir)) {
             foreach ($this->logdir as $folder) {
-                if (file_exists($folder.DIRECTORY_SEPARATOR.$file)) {
-                    $file = $folder.DIRECTORY_SEPARATOR.$file;
+                if (file_exists($folder.DS.$file)) {
+                    $file = $folder.DS.$file;
                     break;
                 }
             }
@@ -105,8 +105,8 @@ class Viewer
             return $file;
         }
 
-        $logdir .= $this->logdir.($this->folder ? DIRECTORY_SEPARATOR.$this->folder : '');
-        $file = $logdir.DIRECTORY_SEPARATOR.$file;
+        $logdir .= $this->logdir.($this->folder ? DS.$this->folder : '');
+        $file = $logdir.DS.$file;
 
         if (dirname($file) !== $logdir) {
             throw new \Exception(sprintf('No such log file: %s', $file));
@@ -115,12 +115,12 @@ class Viewer
         return $file;
     }
 
-    public function getFolderName()
+    public function dirname()
     {
         return $this->folder;
     }
 
-    public function getFileName()
+    public function filename()
     {
         return basename($this->file);
     }
@@ -130,7 +130,7 @@ class Viewer
         $log = [];
 
         if (! $this->file) {
-            $file = $this->folder ? $this->getFolderFiles() : $this->getFiles();
+            $file = $this->folder ? $this->files_of() : $this->files();
 
             if (! count($file)) {
                 return [];
@@ -155,13 +155,13 @@ class Viewer
 
         $file = file_get_contents($this->file);
 
-        preg_match_all($this->pattern('logs'), $file, $headings);
+        preg_match_all($this->regex('logs'), $file, $headings);
 
         if (! is_array($headings)) {
             return $log;
         }
 
-        $data = preg_split($this->pattern('logs'), $file);
+        $data = preg_split($this->regex('logs'), $file);
 
         if ($data[0] < 1) {
             array_shift($data);
@@ -174,9 +174,9 @@ class Viewer
                 foreach ($levels as $level) {
                     if (strpos(strtolower($heading[$i]), '.'.$level)
                     || strpos(strtolower($heading[$i]), $level.':')) {
-                        $pattern = $this->pattern('current_log', 0).$level.$this->pattern('current_log', 1);
+                        $regex = $this->regex('current_log', 0).$level.$this->regex('current_log', 1);
 
-                        preg_match($pattern, $heading[$i], $current);
+                        preg_match($regex, $heading[$i], $current);
 
                         if (! isset($current[4])) {
                             continue;
@@ -220,7 +220,7 @@ class Viewer
         return array_reverse($log);
     }
 
-    public function foldersAndFiles($path = null)
+    public function lists($path = null)
     {
         $items = [];
         $dir = $path ? $path : $this->logdir;
@@ -231,10 +231,10 @@ class Viewer
                 continue;
             }
 
-            $path = $dir.DIRECTORY_SEPARATOR.$node;
+            $path = $dir.DS.$node;
 
             if (is_dir($path)) {
-                $items[$path] = $this->foldersAndFiles($path);
+                $items[$path] = $this->lists($path);
             } else {
                 $items[] = $path;
             }
@@ -243,12 +243,12 @@ class Viewer
         return $items;
     }
 
-    public function getFolders($folder = '')
+    public function folders($folder = '')
     {
         $folders = [];
         $items = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator(
-                $this->logdir.DIRECTORY_SEPARATOR.$folder,
+                $this->logdir.DS.$folder,
                 \RecursiveDirectoryIterator::SKIP_DOTS
             ),
             \RecursiveIteratorIterator::CHILD_FIRST
@@ -260,18 +260,18 @@ class Viewer
             }
         }
 
-        return array_merge($folders, [DIRECTORY_SEPARATOR]);
+        return array_merge($folders, [DS]);
     }
 
-    public function getFolderFiles($basename = false)
+    public function files_of($basename = false)
     {
-        return $this->getFiles($basename, $this->folder);
+        return $this->files($basename, $this->folder);
     }
 
-    public function getFiles($basename = false, $folder = '')
+    public function files($basename = false, $folder = '')
     {
         $files = [];
-        $pattern = '*.log.php';
+        $regex = '*.log.php';
         $fullpath = $this->logdir;
         $items = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($fullpath, \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -280,7 +280,7 @@ class Viewer
 
         foreach ($items as $item) {
             if (! $item->isDir()
-            && strtolower(pathinfo($item->getRealPath(), PATHINFO_EXTENSION)) === explode('.', $pattern)[1]) {
+            && strtolower(pathinfo($item->getRealPath(), PATHINFO_EXTENSION)) === explode('.', $regex)[1]) {
                 $files[] = $basename ? basename($item->getRealPath()) : $item->getRealPath();
             }
         }
@@ -290,41 +290,36 @@ class Viewer
         return array_values($files);
     }
 
-    public function getLogDir()
+    public function logdir()
     {
         return $this->logdir;
     }
 
-    public function setStoragePath($path)
-    {
-        $this->logdir = $path;
-    }
-
-    public static function directoryTreeStructure($logdir, array $array)
+    public static function tree($logdir, array $array)
     {
         foreach ($array as $k => $v) {
             if (is_dir($k)) {
-                $items = explode(DIRECTORY_SEPARATOR, $k);
+                $items = explode(DS, $k);
                 $show = Str::replace_last('.log.php', '', last($items));
 
                 echo '<div class="list-group folder">
-                    <a href="?f='.base64_encode($k).'">
-                        <span class="fa fa-folder"></span> '.last(explode(DIRECTORY_SEPARATOR, $show)).'
+                    <a href="?f='.$this->encode($k).'">
+                        <span class="fa fa-folder"></span> '.last(explode(DS, $show)).'
                     </a>
                 </div>';
 
                 if (is_array($v)) {
-                    self::directoryTreeStructure($logdir, $v);
+                    self::tree($logdir, $v);
                 }
             } else {
-                $items = explode(DIRECTORY_SEPARATOR, $v);
+                $items = explode(DS, $v);
                 $show = Str::replace_last('.log.php', '', last($items));
-                $folder = str_replace($logdir, '', rtrim(str_replace($show, '', $v), DIRECTORY_SEPARATOR));
+                $folder = str_replace($logdir, '', rtrim(str_replace($show, '', $v), DS));
                 $file = $v;
 
                 echo '<div class="list-group">
-                    <a href="?l='.base64_encode($file).'&f='.base64_encode($folder).'">
-                        <span class="fa fa-file"></span> '.last(explode(DIRECTORY_SEPARATOR, $show)).'
+                    <a href="?l='.$this->encode($file).'&f='.$this->encode($folder).'">
+                        <span class="fa fa-file"></span> '.last(explode(DS, $show)).'
                     </a>
                 </div>';
             }
@@ -346,8 +341,34 @@ class Viewer
         return $this->css[$level];
     }
 
-    public function pattern($pattern, $index = null)
+    public function regex($regex, $index = null)
     {
-        return is_null($index) ? $this->patterns[$pattern] : $this->patterns[$pattern][$index];
+        return is_null($index) ? $this->regexes[$regex] : $this->regexes[$regex][$index];
+    }
+
+    public function encode($value)
+    {
+        $value = urlencode($value);
+        $len = mb_strlen($value, '8bit');
+        $out = '';
+
+        for ($i = 0; $i < $len; $i++) {
+            $out .= chr(ord(substr($value, $i, 1)) + ord(substr(RAKIT_KEY, ($i % strlen(RAKIT_KEY)) - 1, 1)));
+        }
+
+        return base64_encode($out);
+    }
+
+    public function decode($value)
+    {
+        $value = base64_decode($value);
+        $len = mb_strlen($value, '8bit');
+        $out = '';
+
+        for ($i = 0; $i < $len; $i++) {
+            $out .= chr(ord(substr($value, $i, 1)) - ord(substr(RAKIT_KEY, ($i % strlen(RAKIT_KEY)) - 1, 1)));
+        }
+
+        return urldecode($out);
     }
 }

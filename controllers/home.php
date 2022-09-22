@@ -18,14 +18,14 @@ class Logviewer_Home_Controller extends Controller
 
     public function action_index()
     {
-        $folder_files = [];
+        $items = [];
 
         if (Input::get('f')) {
-            $this->viewer->setFolder(base64_decode(Input::get('f')));
-            $folder_files = $this->viewer->getFolderFiles(true);
+            $this->viewer->in($this->viewer->decode(Input::get('f')));
+            $items = $this->viewer->files_of(true);
         }
         if (Input::get('l')) {
-            $this->viewer->setFile(base64_decode(Input::get('l')));
+            $this->viewer->of($this->viewer->decode(Input::get('l')));
         }
 
         if (false !== ($halt = $this->halt())) {
@@ -34,14 +34,15 @@ class Logviewer_Home_Controller extends Controller
 
         $data = [
             'logs' => $this->viewer->all(),
-            'folders' => $this->viewer->getFolders(),
-            'current_folder' => $this->viewer->getFolderName(),
-            'folder_files' => $folder_files,
-            'files' => $this->viewer->getFiles(true),
-            'current_file' => $this->viewer->getFileName(),
+            'folders' => $this->viewer->folders(),
+            'current_folder' => $this->viewer->dirname(),
+            'folder_files' => $items,
+            'files' => $this->viewer->files(true),
+            'current_file' => $this->viewer->filename(),
             'standard' => true,
-            'structure' => $this->viewer->foldersAndFiles(),
-            'log_dir' => $this->viewer->getLogDir(),
+            'structure' => $this->viewer->lists(),
+            'log_dir' => $this->viewer->logdir(),
+            'viewer' => $this->viewer,
 
         ];
 
@@ -51,6 +52,7 @@ class Logviewer_Home_Controller extends Controller
 
         if (is_array($data['logs']) && count($data['logs']) > 0) {
             $first = reset($data['logs']);
+
             if ($first) {
                 if (! $first['context'] && ! $first['level']) {
                     $data['standard'] = false;
@@ -64,34 +66,29 @@ class Logviewer_Home_Controller extends Controller
     private function halt()
     {
         if (Input::get('f')) {
-            $this->viewer->setFolder(base64_decode(Input::get('f')));
+            $this->viewer->in($this->viewer->decode(Input::get('f')));
         }
 
         if (Input::get('dl')) {
-            return Response::download($this->realpath('dl'));
+            return Response::download($this->viewer->path($this->viewer->decode(Input::get('dl'))));
         } elseif (Input::has('clean')) {
-            Storage::put($this->realpath('clean'), '');
+            Storage::put($this->viewer->path($this->viewer->decode(Input::get('clean'))), '');
             return Redirect::to(Request::referrer());
         } elseif (Input::has('del')) {
-            Storage::delete($this->realpath('del'));
+            Storage::delete($this->viewer->path($this->viewer->decode(Input::get('del'))));
             return Redirect::to(Request::uri());
         } elseif (Input::has('delall')) {
-            $files = ($this->viewer->getFolderName())
-                ? $this->viewer->getFolderFiles(true)
-                : $this->viewer->getFiles(true);
+            $files = ($this->viewer->dirname())
+                ? $this->viewer->files_of(true)
+                : $this->viewer->files(true);
 
             foreach ($files as $file) {
-                Storage::delete($this->viewer->pathToLogFile($file));
+                Storage::delete($this->viewer->path($file));
             }
 
             return Redirect::to(Request::uri());
         }
 
         return false;
-    }
-
-    private function realpath($param)
-    {
-        return $this->viewer->pathToLogFile(base64_decode(Input::get($param)));
     }
 }

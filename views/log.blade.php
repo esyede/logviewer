@@ -24,11 +24,11 @@
       <div class="list-group div-scroll">
         @foreach($folders as $folder)
           <div class="list-group-item">
-            <?php \Esyede\Viewer::directoryTreeStructure($log_dir, $structure); ?>
+            <?php \Esyede\Viewer::tree($log_dir, $structure); ?>
           </div>
         @endforeach
         @foreach($files as $file)
-          <a href="?l={{ base64_encode($file) }}"
+          <a href="?l={{ $viewer->encode($file) }}"
              class="list-group-item @if ($current_file === $file) llv-active @endif">
             {{ $file }}
           </a>
@@ -85,20 +85,20 @@
       @endif
       <div class="p-3">
         @if($current_file)
-          <a href="?dl={{ base64_encode($current_file) }}{{ ($current_folder) ? '&f='.base64_encode($current_folder) : '' }}">
+          <a href="?dl={{ $viewer->encode($current_file) }}{{ ($current_folder) ? '&f='.$viewer->encode($current_folder) : '' }}">
             <span class="fa fa-download"></span> Download file
           </a>
           -
-          <a id="clean-log" href="?clean={{ base64_encode($current_file) }}{{ ($current_folder) ? '&f='.base64_encode($current_folder) : '' }}">
+          <a id="clean-log" href="?clean={{ $viewer->encode($current_file) }}{{ ($current_folder) ? '&f='.$viewer->encode($current_folder) : '' }}">
             <span class="fa fa-sync"></span> Clean file
           </a>
           -
-          <a id="delete-log" href="?del={{ base64_encode($current_file) }}{{ ($current_folder) ? '&f='.base64_encode($current_folder) : '' }}">
+          <a id="delete-log" href="?del={{ $viewer->encode($current_file) }}{{ ($current_folder) ? '&f='.$viewer->encode($current_folder) : '' }}">
             <span class="fa fa-trash"></span> Delete file
           </a>
           @if(count($files) > 1)
             -
-            <a id="delete-all-log" href="?delall=true{{ ($current_folder) ? '&f='.base64_encode($current_folder) : '' }}">
+            <a id="delete-all-log" href="?delall=true{{ ($current_folder) ? '&f='.$viewer->encode($current_folder) : '' }}">
               <span class="fa fa-trash-alt"></span> Delete all files
             </a>
           @endif
