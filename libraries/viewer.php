@@ -56,7 +56,7 @@ class Viewer
     public function in($folder)
     {
         if (! Str::starts_with($folder, $this->logdir)) {
-            $folder = $this->logdir.$folder;            
+            $folder = $this->logdir.$folder;
         }
 
         if (file_exists($folder)) {
@@ -105,7 +105,7 @@ class Viewer
             return $file;
         }
 
-        $logdir .= $this->logdir.($this->folder ? DS.$this->folder : '');
+        $logdir = $this->logdir.($this->folder ? DS.$this->folder : '');
         $file = $logdir.DS.$file;
 
         if (dirname($file) !== $logdir) {
@@ -130,7 +130,7 @@ class Viewer
         $log = [];
 
         if (! $this->file) {
-            $file = $this->folder ? $this->files_of() : $this->files();
+            $file = $this->folder ? $this->items() : $this->files();
 
             if (! count($file)) {
                 return [];
@@ -243,14 +243,11 @@ class Viewer
         return $items;
     }
 
-    public function folders($folder = '')
+    public function dirs($folder = '')
     {
         $folders = [];
         $items = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(
-                $this->logdir.DS.$folder,
-                \RecursiveDirectoryIterator::SKIP_DOTS
-            ),
+            new \RecursiveDirectoryIterator($this->logdir.DS.$folder, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
 
@@ -263,7 +260,7 @@ class Viewer
         return array_merge($folders, [DS]);
     }
 
-    public function files_of($basename = false)
+    public function items($basename = false)
     {
         return $this->files($basename, $this->folder);
     }
@@ -271,16 +268,14 @@ class Viewer
     public function files($basename = false, $folder = '')
     {
         $files = [];
-        $regex = '*.log.php';
-        $fullpath = $this->logdir;
         $items = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($fullpath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator($this->logdir, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($items as $item) {
             if (! $item->isDir()
-            && strtolower(pathinfo($item->getRealPath(), PATHINFO_EXTENSION)) === explode('.', $regex)[1]) {
+            && strtolower(pathinfo($item->getRealPath(), PATHINFO_EXTENSION)) === 'log') {
                 $files[] = $basename ? basename($item->getRealPath()) : $item->getRealPath();
             }
         }
@@ -303,7 +298,7 @@ class Viewer
                 $show = Str::replace_last('.log.php', '', last($items));
 
                 echo '<div class="list-group folder">
-                    <a href="?f='.$this->encode($k).'">
+                    <a href="?f='.static::encode($k).'">
                         <span class="fa fa-folder"></span> '.last(explode(DS, $show)).'
                     </a>
                 </div>';
@@ -318,7 +313,7 @@ class Viewer
                 $file = $v;
 
                 echo '<div class="list-group">
-                    <a href="?l='.$this->encode($file).'&f='.$this->encode($folder).'">
+                    <a href="?l='.static::encode($file).'&f='.static::encode($folder).'">
                         <span class="fa fa-file"></span> '.last(explode(DS, $show)).'
                     </a>
                 </div>';
@@ -346,29 +341,13 @@ class Viewer
         return is_null($index) ? $this->regexes[$regex] : $this->regexes[$regex][$index];
     }
 
-    public function encode($value)
+    public static function encode($value)
     {
-        $value = urlencode($value);
-        $len = mb_strlen($value, '8bit');
-        $out = '';
-
-        for ($i = 0; $i < $len; $i++) {
-            $out .= chr(ord(substr($value, $i, 1)) + ord(substr(RAKIT_KEY, ($i % strlen(RAKIT_KEY)) - 1, 1)));
-        }
-
-        return base64_encode($out);
+        return base64_encode($value);
     }
 
-    public function decode($value)
+    public static function decode($value)
     {
-        $value = base64_decode($value);
-        $len = mb_strlen($value, '8bit');
-        $out = '';
-
-        for ($i = 0; $i < $len; $i++) {
-            $out .= chr(ord(substr($value, $i, 1)) - ord(substr(RAKIT_KEY, ($i % strlen(RAKIT_KEY)) - 1, 1)));
-        }
-
-        return urldecode($out);
+        return base64_decode($value);
     }
 }
