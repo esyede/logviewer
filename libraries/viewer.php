@@ -227,7 +227,7 @@ class Viewer
         $nodes = scandir($dir);
 
         foreach ($nodes as $node) {
-            if ($node === '.' || $node === '..' || ! Str::ends_with($node, 'log.php')) {
+            if ($node === '.' || $node === '..' || ! Str::ends_with($node, '.log.php')) {
                 continue;
             }
 
