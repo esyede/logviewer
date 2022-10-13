@@ -343,11 +343,11 @@ class Viewer
 
     public static function encode($value)
     {
-        return base64_encode($value);
+        return strtr(str_rot13($value), '=+/:.\\', ';-_$?!');
     }
 
     public static function decode($value)
     {
-        return base64_decode($value);
+        return str_rot13(strtr($value, ';-_$?!', '=+/:.\\'));
     }
 }
