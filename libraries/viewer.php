@@ -343,11 +343,11 @@ class Viewer
 
     public static function encode($value)
     {
-        return str_replace(['/', '\\', ':'], ['?', '!', '$'], str_rot13($value));
+        return str_replace(['/', '\\', ':'], ['$', '!', '?'], str_rot13($value));
     }
 
     public static function decode($value)
     {
-        return str_rot13(str_replace(['/', '\\', ':'], ['?', '!', '$'], $value));
+        return str_rot13(str_replace(['$', '!', '?'], ['/', '\\', ':'], $value));
     }
 }
