@@ -148,7 +148,7 @@ class Viewer
                 'context' => '',
                 'level' => '',
                 'date' => null,
-                'text' => 'Log file "'.$this->file.'" not readable',
+                'text' => sprintf('Log file is not readable: %s', $this->file),
                 'stack' => '',
             ]];
         }
@@ -343,11 +343,11 @@ class Viewer
 
     public static function encode($value)
     {
-        return strtr(str_rot13($value), '=+/:.\\', ';-_$?!');
+        return str_replace(['/', '\\', ':'], ['?', '!', '$'], str_rot13($value));
     }
 
     public static function decode($value)
     {
-        return str_rot13(strtr($value, ';-_$?!', '=+/:.\\'));
+        return str_rot13(str_replace(['/', '\\', ':'], ['?', '!', '$'], $value));
     }
 }
